@@ -1,0 +1,81 @@
+# Prometheus Configuration for MicroK8s
+alertmanager:
+  enabled: true
+  persistentVolume:
+    enabled: true
+    size: 10Gi
+    storageClass: standard
+
+prometheus:
+  prometheusSpec:
+    retention: 30d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: fast-ssd
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 100Gi
+    
+    resources:
+      requests:
+        cpu: 500m
+        memory: 2Gi
+      limits:
+        cpu: 2000m
+        memory: 8Gi
+    
+    # Scrape GPU metrics
+    additionalScrapeConfigs:
+    - job_name: gpu-metrics
+      scrape_interval: 30s
+      static_configs:
+      - targets:
+        - nvidia-dcgm-exporter.gpu-operator-resources.svc.cluster.local:9400
+
+grafana:
+  enabled: true
+  adminPassword: "changeme"  # Change this!
+  persistence:
+    enabled: true
+    storageClassName: standard
+    size: 10Gi
+  
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/default
+
+  dashboards:
+    default:
+      nvidia-gpu:
+        url: https://grafana.com/api/dashboards/12239/revisions/1/download
+        datasource: Prometheus
+
+nodeExporter:
+  enabled: true
+
+kubeStateMetrics:
+  enabled: true
+
+# Service monitors for additional components
+additionalServiceMonitors:
+- name: nginx-ingress
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ingress-nginx
+  namespaceSelector:
+    matchNames:
+    - ingress
+  endpoints:
+  - port: metrics
+    interval: 30s

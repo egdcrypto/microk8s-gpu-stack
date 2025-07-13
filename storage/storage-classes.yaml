@@ -1,0 +1,39 @@
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast-ssd
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+provisioner: microk8s.io/hostpath
+parameters:
+  type: DirectoryOrCreate
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: standard
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: microk8s.io/hostpath
+parameters:
+  type: DirectoryOrCreate
+volumeBindingMode: Immediate
+reclaimPolicy: Retain
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gpu-storage
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+provisioner: microk8s.io/hostpath
+parameters:
+  type: DirectoryOrCreate
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain
+mountOptions:
+  - noatime
+  - nodiratime
