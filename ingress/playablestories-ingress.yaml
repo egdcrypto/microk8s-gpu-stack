@@ -1,0 +1,116 @@
+---
+# Production Web Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: playablestories-web-ingress
+  namespace: production
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"  # Disable for now, enable when SSL is configured
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: www.playablestories.ai
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: playablestories-web
+            port:
+              number: 80
+---
+# Production API Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: playablestories-api-ingress
+  namespace: production
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: api.playablestories.ai
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: playablestories-api
+            port:
+              number: 80
+---
+# Development Web Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: playablestories-dev-web-ingress
+  namespace: development
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: basic-auth
+    nginx.ingress.kubernetes.io/auth-realm: 'Development Environment - Authentication Required'
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: dev.playablestories.ai
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: playablestories-dev-web
+            port:
+              number: 80
+---
+# Development API Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: playablestories-dev-api-ingress
+  namespace: development
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: basic-auth
+    nginx.ingress.kubernetes.io/auth-realm: 'Development API - Authentication Required'
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: dev-api.playablestories.ai
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: playablestories-dev-api
+            port:
+              number: 80
+---
+# Basic Auth Secret for Development Environment
+apiVersion: v1
+kind: Secret
+metadata:
+  name: basic-auth
+  namespace: development
+type: Opaque
+data:
+  # Username: admin, Password: changeme
+  # Generated with: htpasswd -nb admin changeme | base64
+  auth: YWRtaW46JGFwcjEkRmRGSXNVZEkkUXAuYzhHRlRLMm1XNVY5OUxKNTNEMQo=

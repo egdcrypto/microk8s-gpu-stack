@@ -1,0 +1,199 @@
+---
+# Namespace for Ollama
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ollama
+  labels:
+    app: ollama
+    purpose: llm-inference
+---
+# PersistentVolumeClaim for storing Ollama models
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models-pvc
+  namespace: ollama
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: microk8s-hostpath  # Using the default storage class
+  resources:
+    requests:
+      storage: 200Gi  # Adjust based on your model storage needs
+---
+# Ollama Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+  namespace: ollama
+  labels:
+    app: ollama
+spec:
+  type: ClusterIP
+  ports:
+  - port: 11434
+    targetPort: 11434
+    name: api
+  selector:
+    app: ollama
+---
+# Ollama Deployment with GPU
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: ollama
+  labels:
+    app: ollama
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      containers:
+      - name: ollama
+        image: ollama/ollama:latest
+        ports:
+        - containerPort: 11434
+          name: api
+        env:
+        - name: OLLAMA_HOST
+          value: "0.0.0.0"
+        - name: OLLAMA_KEEP_ALIVE
+          value: "5m"
+        - name: OLLAMA_NUM_PARALLEL
+          value: "4"
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: "all"
+        - name: NVIDIA_DRIVER_CAPABILITIES
+          value: "compute,utility"
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+            memory: 24Gi
+            cpu: 8
+          requests:
+            nvidia.com/gpu: 1
+            memory: 16Gi
+            cpu: 4
+        volumeMounts:
+        - name: ollama-models
+          mountPath: /root/.ollama
+        - name: dshm
+          mountPath: /dev/shm
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 11434
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 11434
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: ollama-models
+        persistentVolumeClaim:
+          claimName: ollama-models-pvc
+      - name: dshm
+        emptyDir:
+          medium: Memory
+          sizeLimit: 8Gi
+      # nodeSelector removed - let scheduler handle GPU resource request
+---
+# Optional: Ingress for external access
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ollama-ingress
+  namespace: ollama
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "600"
+    # Uncomment for basic auth
+    # nginx.ingress.kubernetes.io/auth-type: basic
+    # nginx.ingress.kubernetes.io/auth-secret: ollama-basic-auth
+    # nginx.ingress.kubernetes.io/auth-realm: 'Ollama API - Authentication Required'
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: ollama.local  # Change to your desired hostname
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: ollama
+            port:
+              number: 11434
+---
+# ConfigMap for model preloading script (optional)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ollama-scripts
+  namespace: ollama
+data:
+  preload-models.sh: |
+    #!/bin/bash
+    echo "Preloading Ollama models..."
+    
+    # Wait for Ollama to be ready
+    until curl -s http://localhost:11434/api/tags > /dev/null; do
+      echo "Waiting for Ollama to start..."
+      sleep 5
+    done
+    
+    # Preload commonly used models
+    # Uncomment the models you want to preload
+    
+    # Small models
+    # ollama pull llama2:7b
+    # ollama pull mistral:7b
+    # ollama pull codellama:7b
+    
+    # Medium models
+    # ollama pull llama2:13b
+    # ollama pull mixtral:8x7b
+    
+    # Large models (ensure you have enough GPU memory)
+    # ollama pull llama2:70b
+    
+    echo "Model preloading complete!"
+---
+# Job to preload models after deployment (optional)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ollama-model-preloader
+  namespace: ollama
+spec:
+  template:
+    spec:
+      containers:
+      - name: preloader
+        image: curlimages/curl:latest
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          echo "Waiting for Ollama to be ready..."
+          until curl -s http://ollama:11434/api/tags > /dev/null; do
+            sleep 5
+          done
+          echo "Ollama is ready!"
+          # Preload a model (change as needed)
+          curl -X POST http://ollama:11434/api/pull -d '{"name": "llama2:7b"}'
+      restartPolicy: OnFailure

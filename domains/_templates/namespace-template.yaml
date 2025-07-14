@@ -1,0 +1,26 @@
+---
+# Namespace template for domain-based organization
+# Replace {{DOMAIN_SAFE}} with domain name (dots replaced with dashes)
+# Replace {{ENVIRONMENT}} with environment name
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{DOMAIN_SAFE}}-{{ENVIRONMENT}}
+  labels:
+    domain: {{DOMAIN}}
+    environment: {{ENVIRONMENT}}
+    managed-by: domain-manager
+---
+# Resource quota for the namespace
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{DOMAIN_SAFE}}-{{ENVIRONMENT}}-quota
+  namespace: {{DOMAIN_SAFE}}-{{ENVIRONMENT}}
+spec:
+  hard:
+    requests.cpu: "{{CPU_QUOTA}}"
+    requests.memory: "{{MEMORY_QUOTA}}"
+    requests.storage: "{{STORAGE_QUOTA}}"
+    persistentvolumeclaims: "{{PVC_QUOTA}}"
+    services: "{{SERVICE_QUOTA}}"

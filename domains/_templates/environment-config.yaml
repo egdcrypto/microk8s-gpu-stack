@@ -1,0 +1,53 @@
+# Environment Configuration Template
+# This file defines environment-specific settings
+
+# Environment name (production, staging, development)
+environment: {{ENVIRONMENT}}
+
+# Resource allocations
+resources:
+  # Namespace quotas
+  namespace:
+    cpu_quota: "{{CPU_QUOTA}}"          # e.g., "100" for 100 cores
+    memory_quota: "{{MEMORY_QUOTA}}"    # e.g., "200Gi"
+    storage_quota: "{{STORAGE_QUOTA}}"  # e.g., "1Ti"
+    pvc_quota: "{{PVC_QUOTA}}"          # e.g., "20"
+    service_quota: "{{SERVICE_QUOTA}}"  # e.g., "10"
+  
+  # Web service resources
+  web:
+    replicas: {{WEB_REPLICAS}}
+    cpu_request: "{{WEB_CPU_REQUEST}}"      # e.g., "100m"
+    cpu_limit: "{{WEB_CPU_LIMIT}}"          # e.g., "500m"
+    memory_request: "{{WEB_MEMORY_REQUEST}}" # e.g., "128Mi"
+    memory_limit: "{{WEB_MEMORY_LIMIT}}"    # e.g., "512Mi"
+  
+  # API service resources
+  api:
+    replicas: {{API_REPLICAS}}
+    cpu_request: "{{API_CPU_REQUEST}}"      # e.g., "200m"
+    cpu_limit: "{{API_CPU_LIMIT}}"          # e.g., "1000m"
+    memory_request: "{{API_MEMORY_REQUEST}}" # e.g., "256Mi"
+    memory_limit: "{{API_MEMORY_LIMIT}}"    # e.g., "1Gi"
+
+# Security settings
+security:
+  ssl_redirect: {{SSL_REDIRECT}}           # true/false
+  force_ssl: {{FORCE_SSL}}                 # true/false
+  basic_auth:
+    enabled: {{BASIC_AUTH_ENABLED}}        # true/false
+    secret_name: "{{AUTH_SECRET}}"         # e.g., "basic-auth"
+    realm: "{{AUTH_REALM}}"                # e.g., "Development Environment"
+
+# Network policies
+network:
+  cors:
+    enabled: {{CORS_ENABLED}}              # true/false
+    allowed_origins: "{{CORS_ORIGINS}}"    # e.g., "*" or specific domains
+  rate_limiting:
+    enabled: {{RATE_LIMIT_ENABLED}}        # true/false
+    requests_per_second: {{RATE_LIMIT_RPS}} # e.g., 100
+
+# Monitoring and logging
+monitoring:
+  log_level: "{{LOG_LEVEL}}"               # debug, info, warn, error

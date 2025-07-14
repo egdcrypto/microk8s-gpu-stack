@@ -1,217 +1,290 @@
-# MicroK8s Kubernetes Setup
+# MicroK8s GPU Stack
 
-This repository contains all the necessary files and configurations to set up a production-ready MicroK8s cluster with GPU support.
+A comprehensive Kubernetes setup for AI/ML workloads with GPU support, designed for development and production environments.
+
+## 🚀 Deployed Infrastructure
+
+✅ **Core Services:**
+- **Temporal.io**: Workflow orchestration (`temporal` namespace)
+- **MongoDB**: Replica set with authentication (`mongodb` namespace) 
+- **Ollama**: GPU-accelerated LLM inference (`ollama` namespace)
+- **Apache Pulsar**: Message streaming platform (`pulsar` namespace)
+- **Docker Registry**: Local image registry with UI
+- **Cert-Manager**: SSL certificate management
+- **NGINX Ingress**: SSL-enabled ingress controller
+
+✅ **External Access:**
+- **Temporal UI**: http://192.168.0.118:30880
+- **MongoDB**: 192.168.0.118:30017 (MongoDB Compass ready)
+- **Registry UI**: http://192.168.0.118:32080
+- **Pulsar Manager**: http://192.168.0.118:30527/pulsar-manager
+- **Pulsar Broker**: pulsar://192.168.0.118:30650
+
+✅ **SSL Domains (HTTPS Only):**
+
+**Production Environment:**
+- **Web**: https://www.playablestories.ai (Full production app with styling)
+- **API**: https://api.playablestories.ai (Production API v1.0.0)
+
+**Development Environment:**
+- **Dev Web**: https://dev.playablestories.ai (Simple HTML placeholder)
+- **Dev API**: https://dev-api.playablestories.ai (JSON status endpoint)
+
+> **DNS Configuration**: All domains resolve to 107.194.78.98 via CNAME to egdirty.ddns.net. NAT forwards port 443 to 192.168.0.118. Let's Encrypt certificates are being issued for all subdomains.
+
+> **Note**: If dev.playablestories.ai is not resolving externally, verify DNS propagation and NAT forwarding configuration for the development subdomain.
 
 ## Directory Structure
 
 ```
 k8s-setup/
-├── namespaces/          # Namespace definitions and resource quotas
-├── storage/             # Storage classes and PVC templates
-├── ingress/             # Ingress configurations and cert-manager
-├── monitoring/          # Prometheus and Grafana setup
-├── applications/        # Example applications including GPU workloads
-├── scripts/             # Setup and maintenance scripts
-├── docs/                # Additional documentation
-└── README.md            # This file
+├── applications/           # Production-ready applications
+│   ├── mongodb/           # MongoDB replica set with authentication
+│   ├── temporal/          # Temporal.io workflow orchestration
+│   ├── ollama/            # GPU-accelerated LLM inference
+│   ├── pulsar/            # Apache Pulsar messaging platform
+│   ├── gpu/               # GPU testing and examples
+│   └── registry-ui.yaml   # Docker registry with web UI
+├── domains/               # Domain-based organization
+│   ├── _templates/        # Reusable templates
+│   └── playablestories.ai/ # Domain-specific configs (dev/prod)
+├── ingress/               # Ingress controllers and SSL
+├── monitoring/            # Prometheus/Grafana stack
+├── namespaces/            # Namespace definitions
+├── scripts/               # Setup and maintenance scripts
+├── storage/               # Storage configuration
+└── docs/                  # Documentation
 ```
-
-## Prerequisites
-
-- Ubuntu 24.04 LTS
-- MicroK8s installed
-- NVIDIA GPU with drivers (for GPU workloads)
-- At least 32GB RAM
-- 500GB+ storage space
 
 ## Quick Start
 
-1. **Initial Setup**
-   ```bash
-   sudo /home/repos/k8s-setup/scripts/setup-cluster.sh
-   ```
+### 1. Prerequisites
+- Ubuntu 24.04 LTS
+- MicroK8s installed with GPU support
+- NVIDIA GPU with drivers
+- 32GB+ RAM, 500GB+ storage
 
-2. **Verify Installation**
-   ```bash
-   sudo /home/repos/k8s-setup/scripts/health-check.sh
-   ```
-
-3. **Apply Sample Applications**
-   ```bash
-   # Create namespaces first
-   sudo microk8s kubectl apply -f /home/repos/k8s-setup/namespaces/namespaces.yaml
-   
-   # Deploy sample web app
-   sudo microk8s kubectl apply -f /home/repos/k8s-setup/applications/sample-web-app.yaml
-   ```
-
-## Key Components
-
-### Namespaces
-
-- **production**: Production workloads
-- **staging**: Staging environment
-- **development**: Development environment
-- **monitoring**: Monitoring stack (Prometheus, Grafana)
-- **gpu-workloads**: GPU-accelerated applications
-
-### Storage Classes
-
-- **standard**: Default storage class with retain policy
-- **fast-ssd**: High-performance storage for databases
-- **gpu-storage**: Optimized storage for GPU workloads
-
-### Ingress
-
-- NGINX Ingress Controller
-- Cert-Manager for SSL certificates
-- Example configurations for different use cases
-
-### GPU Support
-
-- NVIDIA GPU Operator automatically installed
-- Example GPU applications:
-  - Jupyter Notebook with GPU
-  - LLM Inference Server (vLLM)
-
-### Monitoring
-
-- Prometheus for metrics collection
-- Grafana for visualization
-- Pre-configured dashboards and alerts
-- GPU metrics monitoring
-
-## Common Operations
-
-### Deploy an Application
-
+### 2. Deploy Core Infrastructure
 ```bash
-# Apply your application manifest
-sudo microk8s kubectl apply -f your-app.yaml
+# Apply namespaces
+kubectl apply -f namespaces/namespaces.yaml
 
-# Check deployment status
-sudo microk8s kubectl get pods -n your-namespace
+# Deploy MongoDB replica set
+kubectl apply -f applications/mongodb-replica-set.yaml
+
+# Deploy Temporal workflow engine
+kubectl apply -f applications/temporal/temporal-postgres.yaml
+
+# Deploy Ollama GPU inference
+kubectl apply -f applications/ollama-gpu.yaml
+
+# Deploy Apache Pulsar
+kubectl apply -f applications/pulsar-standalone.yaml
+
+# Deploy registry UI
+kubectl apply -f applications/registry-ui.yaml
+
+# Install cert-manager for SSL
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.0/cert-manager.yaml
+kubectl apply -f ingress/cert-manager.yaml
+
+# Deploy development environment with SSL
+kubectl apply -f domains/playablestories.ai/development/namespace.yaml
+kubectl apply -f domains/playablestories.ai/development/ingress-ssl.yaml
 ```
 
-### Access Kubernetes Dashboard
-
+### 3. Verify Deployments
 ```bash
-# Enable dashboard
-sudo microk8s enable dashboard
+# Check all services
+kubectl get pods --all-namespaces
 
-# Get access token
-sudo microk8s kubectl describe secret -n kube-system microk8s-dashboard-token
-
-# Start proxy
-sudo microk8s dashboard-proxy
+# Test external access
+curl http://192.168.0.118:30880  # Temporal UI
+curl http://192.168.0.118:32080  # Registry UI
 ```
 
-### Backup Persistent Volumes
+## Connection Information
 
+### MongoDB (Production Ready)
+- **External**: `192.168.0.118:30017`
+- **Username**: `admin` / **Password**: `admin123`
+- **Compass**: `mongodb://admin:admin123@192.168.0.118:30017/?authSource=admin&directConnection=true`
+
+### Temporal.io
+- **UI**: http://192.168.0.118:30880
+- **gRPC**: `192.168.0.118:30733`
+
+### Apache Pulsar
+- **Broker**: `pulsar://192.168.0.118:30650`
+- **Admin**: `http://192.168.0.118:30080`
+- **Manager UI**: http://192.168.0.118:30527/pulsar-manager
+
+### Docker Registry
+- **UI**: http://192.168.0.118:32080
+- **Registry**: `192.168.0.118:32000`
+
+### SSL Domains (HTTPS + Auth)
+- **Development Web**: https://dev.playablestories.ai (user: admin, pass: changeme)
+- **Development API**: https://dev-api.playablestories.ai (user: admin, pass: changeme)
+
+## Key Features
+
+### 🔐 Security
+- Generated secure passwords for all services
+- Kubernetes secrets management
+- Replica set authentication for MongoDB
+- Keyfile-based internal authentication
+
+### 🚀 GPU Support
+- NVIDIA GPU Operator integration
+- Ollama with GPU acceleration
+- Resource limits and requests configured
+
+### 📊 Observability
+- Temporal workflow monitoring
+- MongoDB replica set health checks
+- Registry metrics and UI
+
+### 🌐 Domain Management
+- Template-based domain configuration
+- Development and production environments
+- Cert-manager for SSL certificates
+
+## Operations
+
+### Health Checks
 ```bash
-sudo /home/repos/k8s-setup/scripts/backup-pvs.sh
+# MongoDB status
+kubectl exec -n mongodb mongodb-0 -- mongosh --eval "rs.status()"
+
+# Temporal status  
+kubectl get pods -n temporal
+
+# GPU availability
+kubectl get nodes -o=custom-columns=NAME:.metadata.name,GPUs:.status.capacity.'nvidia\.com/gpu'
 ```
 
-### Monitor GPU Usage
-
+### Scaling
 ```bash
-# Check GPU availability
-sudo microk8s kubectl get nodes -o=custom-columns=NAME:.metadata.name,GPUs:.status.capacity.'nvidia\.com/gpu'
+# Scale deployments
+kubectl scale deployment/temporal-ui --replicas=2 -n temporal
 
-# Monitor GPU metrics
-nvidia-smi
-
-# View GPU pods
-sudo microk8s kubectl get pods -n gpu-operator-resources
+# Check resource usage
+kubectl top nodes
+kubectl top pods --all-namespaces
 ```
 
-### Scale Applications
-
+### Backups
 ```bash
-# Manual scaling
-sudo microk8s kubectl scale deployment/app-name --replicas=5 -n namespace
+# Backup persistent volumes
+./scripts/backup-pvs.sh
 
-# Check HPA status
-sudo microk8s kubectl get hpa -n namespace
+# MongoDB backup
+kubectl exec -n mongodb mongodb-0 -- mongodump --out /tmp/backup
 ```
+
+## Documentation
+
+- [MongoDB Setup](applications/mongodb/README.md)
+- [Temporal Setup](applications/temporal/README.md)  
+- [Apache Pulsar Setup](applications/pulsar/README.md)
+- [MongoDB Compass Guide](applications/mongodb/COMPASS-SETUP.md)
+- [GPU Setup Guide](docs/gpu-setup.md)
+- [Domain Management](docs/playablestories-setup.md)
 
 ## Troubleshooting
 
-### MicroK8s Not Starting
+### Common Issues
 
+**MongoDB Connection**:
 ```bash
-# Check status
-sudo microk8s status
+# Test internal connection
+kubectl exec -n mongodb mongodb-0 -- mongosh --eval "rs.status()"
 
-# View logs
-sudo journalctl -u snap.microk8s.daemon-kubelite -f
-
-# Reset if needed
-sudo microk8s reset
+# Test external connection
+mongosh "mongodb://admin:admin123@192.168.0.118:30017/?authSource=admin&directConnection=true"
 ```
 
-### GPU Not Detected
-
+**GPU Not Available**:
 ```bash
-# Verify NVIDIA driver
+# Check GPU operator
+kubectl get pods -n gpu-operator-resources
+
+# Verify drivers
 nvidia-smi
-
-# Check GPU operator pods
-sudo microk8s kubectl get pods -n gpu-operator-resources
-
-# View GPU operator logs
-sudo microk8s kubectl logs -n gpu-operator-resources deployment/gpu-operator
 ```
 
-### Storage Issues
-
+**Temporal UI 500 Error**:
 ```bash
-# Check PV/PVC status
-sudo microk8s kubectl get pv
-sudo microk8s kubectl get pvc --all-namespaces
+# Check backend status
+kubectl logs -n temporal deployment/temporal
 
-# Describe problematic PVC
-sudo microk8s kubectl describe pvc pvc-name -n namespace
+# Restart if needed
+kubectl rollout restart deployment/temporal -n temporal
 ```
 
-## Security Considerations
+**SSL Certificate Issues**:
+```bash
+# Check certificate status
+kubectl get certificate -n playablestories-ai-development
 
-1. **Change Default Passwords**: Update all default passwords in the manifests
-2. **Configure RBAC**: Set up proper role-based access control
-3. **Network Policies**: Implement network policies for pod communication
-4. **Secrets Management**: Use proper secret management for sensitive data
-5. **Regular Updates**: Keep MicroK8s and addons updated
+# Check cert-manager logs
+kubectl logs -n cert-manager deployment/cert-manager
+
+# Check ClusterIssuer status (requires valid email, not example.com)
+kubectl describe clusterissuer letsencrypt-prod
+
+# Verify ACME challenges
+kubectl get challenge -A
+```
+
+**Ingress Authentication Issues**:
+- Remove conflicting ingress resources in other namespaces
+- Ensure basic auth secrets are deleted if auth is disabled
+- Restart nginx ingress controller: `kubectl delete pod -n ingress -l app=nginx-ingress-microk8s`
+
+**External Access Issues**:
+If domains are not accessible externally but work locally:
+```bash
+# Test local access (should work)
+curl -H "Host: dev.playablestories.ai" http://localhost
+
+# Test external connectivity (may fail if NAT issue)
+telnet 107.194.78.98 443
+
+# Verify ingress is listening on correct ports
+kubectl describe daemonset nginx-ingress-microk8s-controller -n ingress | grep Port
+
+# Check NAT/Router configuration:
+# - Ensure port 443 is forwarded to 192.168.0.118:443
+# - Ensure port 80 is forwarded to 192.168.0.118:80
+# - Check if ISP blocks incoming connections
+# - Verify router/firewall allows incoming HTTPS traffic
+```
 
 ## Maintenance
 
-### Daily Tasks
-- Monitor cluster health: `/home/repos/k8s-setup/scripts/health-check.sh`
-- Check resource usage: `sudo microk8s kubectl top nodes`
+### Regular Tasks
+- **Daily**: Monitor cluster health with `scripts/health-check.sh`
+- **Weekly**: Backup persistent volumes
+- **Monthly**: Update MicroK8s and applications
 
-### Weekly Tasks
-- Backup persistent volumes: `/home/repos/k8s-setup/scripts/backup-pvs.sh`
-- Review logs and alerts
-- Update applications if needed
+### Updates
+```bash
+# Update MicroK8s
+sudo snap refresh microk8s
 
-### Monthly Tasks
-- Update MicroK8s: `sudo snap refresh microk8s`
-- Review and update security policies
-- Clean up unused resources
-
-## Additional Resources
-
-- [MicroK8s Documentation](https://microk8s.io/docs)
-- [Kubernetes Documentation](https://kubernetes.io/docs)
-- [NVIDIA GPU Operator](https://docs.nvidia.com/datacenter/cloud-native/gpu-operator)
-- [Prometheus Operator](https://prometheus-operator.dev/)
+# Update application images
+kubectl set image deployment/temporal temporalio/auto-setup:latest -n temporal
+```
 
 ## Support
 
-For issues specific to this setup:
-1. Check the troubleshooting section
-2. Review logs using `kubectl logs`
-3. Consult the official documentation
+For issues:
+1. Check service-specific README files
+2. Review troubleshooting guides
+3. Check pod logs: `kubectl logs -n <namespace> <pod-name>`
 
 ---
 
-Last Updated: July 2025
+**Last Updated**: July 2025 | **Status**: Production Ready ✅

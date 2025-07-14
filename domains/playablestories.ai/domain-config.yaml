@@ -1,0 +1,39 @@
+# Domain Configuration for playablestories.ai
+domain: playablestories.ai
+domain_safe: playablestories-ai  # Used for Kubernetes naming (no dots)
+description: "Interactive AI-Powered Storytelling Platform"
+
+# Environments for this domain
+environments:
+  - production
+  - staging
+  - development
+
+# Subdomain mapping
+subdomains:
+  production:
+    web: www.playablestories.ai
+    api: api.playablestories.ai
+  staging:
+    web: staging.playablestories.ai
+    api: staging-api.playablestories.ai
+  development:
+    web: dev.playablestories.ai
+    api: dev-api.playablestories.ai
+
+# Application settings
+applications:
+  web:
+    port: 80
+    health_check_path: /
+    image: nginx:alpine  # Default image, override in environment configs
+  api:
+    port: 8080
+    health_check_path: /health
+    image: hashicorp/http-echo:0.2.3  # Default image, override in environment configs
+
+# TLS Configuration
+tls:
+  enabled: false  # Set to true when ready for SSL
+  cert_manager_issuer: letsencrypt-prod
+  secret_name_pattern: "{{subdomain}}-tls"  # e.g., www-playablestories-ai-tls

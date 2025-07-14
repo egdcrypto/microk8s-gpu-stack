@@ -1,0 +1,50 @@
+# Production Environment Configuration for playablestories.ai
+environment: production
+
+# Resource allocations
+resources:
+  # Namespace quotas
+  namespace:
+    cpu_quota: "50"
+    memory_quota: "100Gi"
+    storage_quota: "500Gi"
+    pvc_quota: "10"
+    service_quota: "10"
+  
+  # Web service resources
+  web:
+    replicas: 2
+    cpu_request: "100m"
+    cpu_limit: "500m"
+    memory_request: "128Mi"
+    memory_limit: "512Mi"
+  
+  # API service resources
+  api:
+    replicas: 2
+    cpu_request: "200m"
+    cpu_limit: "1000m"
+    memory_request: "256Mi"
+    memory_limit: "1Gi"
+
+# Security settings
+security:
+  ssl_redirect: false  # Enable when TLS is configured
+  force_ssl: false
+  basic_auth:
+    enabled: false
+    secret_name: ""
+    realm: ""
+
+# Network policies
+network:
+  cors:
+    enabled: true
+    allowed_origins: "*"
+  rate_limiting:
+    enabled: true
+    requests_per_second: 100
+
+# Monitoring and logging
+monitoring:
+  log_level: "info"

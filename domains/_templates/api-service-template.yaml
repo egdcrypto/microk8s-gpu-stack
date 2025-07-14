@@ -1,0 +1,77 @@
+---
+# API Service Template
+# Replace all {{VARIABLE}} placeholders
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{SERVICE_NAME}}-api
+  namespace: {{NAMESPACE}}
+  labels:
+    app: {{SERVICE_NAME}}-api
+    domain: {{DOMAIN}}
+    environment: {{ENVIRONMENT}}
+    component: api
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: {{API_PORT}}
+    name: http
+  selector:
+    app: {{SERVICE_NAME}}-api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{SERVICE_NAME}}-api
+  namespace: {{NAMESPACE}}
+  labels:
+    app: {{SERVICE_NAME}}-api
+    domain: {{DOMAIN}}
+    environment: {{ENVIRONMENT}}
+    component: api
+spec:
+  replicas: {{API_REPLICAS}}
+  selector:
+    matchLabels:
+      app: {{SERVICE_NAME}}-api
+  template:
+    metadata:
+      labels:
+        app: {{SERVICE_NAME}}-api
+        domain: {{DOMAIN}}
+        environment: {{ENVIRONMENT}}
+        component: api
+    spec:
+      containers:
+      - name: api
+        image: {{API_IMAGE}}
+        ports:
+        - containerPort: {{API_PORT}}
+          name: http
+        env:
+        - name: ENVIRONMENT
+          value: "{{ENVIRONMENT}}"
+        - name: DOMAIN
+          value: "{{DOMAIN}}"
+        - name: LOG_LEVEL
+          value: "{{LOG_LEVEL}}"
+        resources:
+          limits:
+            memory: {{API_MEMORY_LIMIT}}
+            cpu: {{API_CPU_LIMIT}}
+          requests:
+            memory: {{API_MEMORY_REQUEST}}
+            cpu: {{API_CPU_REQUEST}}
+        livenessProbe:
+          httpGet:
+            path: {{API_HEALTH_PATH}}
+            port: {{API_PORT}}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: {{API_HEALTH_PATH}}
+            port: {{API_PORT}}
+          initialDelaySeconds: 5
+          periodSeconds: 5

@@ -1,0 +1,48 @@
+---
+# Ingress Template for domain routing
+# Replace all {{VARIABLE}} placeholders
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{INGRESS_NAME}}
+  namespace: {{NAMESPACE}}
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "{{SSL_REDIRECT}}"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "{{FORCE_SSL}}"
+    {{#IF_CORS}}
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "{{CORS_ORIGIN}}"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
+    {{/IF_CORS}}
+    {{#IF_BASIC_AUTH}}
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: {{AUTH_SECRET}}
+    nginx.ingress.kubernetes.io/auth-realm: '{{AUTH_REALM}}'
+    {{/IF_BASIC_AUTH}}
+    {{#IF_RATE_LIMIT}}
+    nginx.ingress.kubernetes.io/limit-rps: "{{RATE_LIMIT_RPS}}"
+    {{/IF_RATE_LIMIT}}
+  labels:
+    domain: {{DOMAIN}}
+    environment: {{ENVIRONMENT}}
+    component: {{COMPONENT}}
+spec:
+  ingressClassName: nginx
+  {{#IF_TLS}}
+  tls:
+  - hosts:
+    - {{HOSTNAME}}
+    secretName: {{TLS_SECRET}}
+  {{/IF_TLS}}
+  rules:
+  - host: {{HOSTNAME}}
+    http:
+      paths:
+      - path: {{PATH}}
+        pathType: {{PATH_TYPE}}
+        backend:
+          service:
+            name: {{SERVICE_NAME}}
+            port:
+              number: {{SERVICE_PORT}}

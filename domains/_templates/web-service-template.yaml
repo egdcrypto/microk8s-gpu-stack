@@ -1,0 +1,75 @@
+---
+# Web Service Template
+# Replace all {{VARIABLE}} placeholders
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{SERVICE_NAME}}-web
+  namespace: {{NAMESPACE}}
+  labels:
+    app: {{SERVICE_NAME}}-web
+    domain: {{DOMAIN}}
+    environment: {{ENVIRONMENT}}
+    component: web
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: {{WEB_PORT}}
+    name: http
+  selector:
+    app: {{SERVICE_NAME}}-web
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{SERVICE_NAME}}-web
+  namespace: {{NAMESPACE}}
+  labels:
+    app: {{SERVICE_NAME}}-web
+    domain: {{DOMAIN}}
+    environment: {{ENVIRONMENT}}
+    component: web
+spec:
+  replicas: {{WEB_REPLICAS}}
+  selector:
+    matchLabels:
+      app: {{SERVICE_NAME}}-web
+  template:
+    metadata:
+      labels:
+        app: {{SERVICE_NAME}}-web
+        domain: {{DOMAIN}}
+        environment: {{ENVIRONMENT}}
+        component: web
+    spec:
+      containers:
+      - name: web
+        image: {{WEB_IMAGE}}
+        ports:
+        - containerPort: {{WEB_PORT}}
+          name: http
+        env:
+        - name: ENVIRONMENT
+          value: "{{ENVIRONMENT}}"
+        - name: DOMAIN
+          value: "{{DOMAIN}}"
+        resources:
+          limits:
+            memory: {{WEB_MEMORY_LIMIT}}
+            cpu: {{WEB_CPU_LIMIT}}
+          requests:
+            memory: {{WEB_MEMORY_REQUEST}}
+            cpu: {{WEB_CPU_REQUEST}}
+        livenessProbe:
+          httpGet:
+            path: {{HEALTH_CHECK_PATH}}
+            port: {{WEB_PORT}}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: {{HEALTH_CHECK_PATH}}
+            port: {{WEB_PORT}}
+          initialDelaySeconds: 5
+          periodSeconds: 5

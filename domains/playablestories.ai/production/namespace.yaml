@@ -1,0 +1,24 @@
+---
+# Namespace for playablestories.ai production environment
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: playablestories-ai-production
+  labels:
+    domain: playablestories.ai
+    environment: production
+    managed-by: domain-manager
+---
+# Resource quota for production
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: playablestories-ai-production-quota
+  namespace: playablestories-ai-production
+spec:
+  hard:
+    requests.cpu: "50"
+    requests.memory: "100Gi"
+    requests.storage: "500Gi"
+    persistentvolumeclaims: "10"
+    services: "10"

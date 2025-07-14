@@ -1,0 +1,50 @@
+# Development Environment Configuration for playablestories.ai
+environment: development
+
+# Resource allocations
+resources:
+  # Namespace quotas
+  namespace:
+    cpu_quota: "10"
+    memory_quota: "20Gi"
+    storage_quota: "100Gi"
+    pvc_quota: "5"
+    service_quota: "5"
+  
+  # Web service resources
+  web:
+    replicas: 1
+    cpu_request: "50m"
+    cpu_limit: "200m"
+    memory_request: "64Mi"
+    memory_limit: "256Mi"
+  
+  # API service resources
+  api:
+    replicas: 1
+    cpu_request: "100m"
+    cpu_limit: "500m"
+    memory_request: "128Mi"
+    memory_limit: "512Mi"
+
+# Security settings
+security:
+  ssl_redirect: true
+  force_ssl: true
+  basic_auth:
+    enabled: true
+    secret_name: "basic-auth-dev"
+    realm: "Development Environment - Authentication Required"
+
+# Network policies
+network:
+  cors:
+    enabled: true
+    allowed_origins: "*"
+  rate_limiting:
+    enabled: false
+    requests_per_second: 0
+
+# Monitoring and logging
+monitoring:
+  log_level: "debug"

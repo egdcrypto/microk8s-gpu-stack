@@ -1,0 +1,15 @@
+---
+# SSL Certificate for production environment
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: playablestories-prod-tls
+  namespace: production
+spec:
+  secretName: playablestories-prod-tls
+  dnsNames:
+  - www.playablestories.ai
+  - api.playablestories.ai
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer

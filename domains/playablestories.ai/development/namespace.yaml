@@ -1,0 +1,35 @@
+---
+# Namespace for playablestories.ai development environment
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: playablestories-ai-development
+  labels:
+    domain: playablestories.ai
+    environment: development
+    managed-by: domain-manager
+---
+# Resource quota for development
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: playablestories-ai-development-quota
+  namespace: playablestories-ai-development
+spec:
+  hard:
+    requests.cpu: "10"
+    requests.memory: "20Gi"
+    requests.storage: "100Gi"
+    persistentvolumeclaims: "5"
+    services: "5"
+---
+# Basic auth secret for development
+apiVersion: v1
+kind: Secret
+metadata:
+  name: basic-auth-dev
+  namespace: playablestories-ai-development
+type: Opaque
+data:
+  # Username: admin, Password: changeme
+  auth: YWRtaW46JGFwcjEkRmRGSXNVZEkkUXAuYzhHRlRLMm1XNVY5OUxKNTNEMQo=
