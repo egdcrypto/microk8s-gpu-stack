@@ -4,7 +4,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: playablestories-dev-tls
-  namespace: playablestories-ai-development
+  namespace: development
 spec:
   secretName: playablestories-dev-tls
   dnsNames:
@@ -19,7 +19,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: playablestories-dev-ingress
-  namespace: playablestories-ai-development
+  namespace: development
   annotations:
     # Allow HTTP for ACME challenge, then force SSL redirect
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
@@ -90,21 +90,21 @@ apiVersion: v1
 kind: Service
 metadata:
   name: playablestories-web
-  namespace: playablestories-ai-development
+  namespace: development
 spec:
   selector:
     app: playablestories-web
   ports:
   - name: http
     port: 80
-    targetPort: 3000
+    targetPort: 80
 ---
 # Development API service placeholder
 apiVersion: v1
 kind: Service
 metadata:
   name: playablestories-api
-  namespace: playablestories-ai-development
+  namespace: development
 spec:
   selector:
     app: playablestories-api
@@ -118,7 +118,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: playablestories-web
-  namespace: playablestories-ai-development
+  namespace: development
 spec:
   replicas: 1
   selector:
@@ -141,29 +141,20 @@ spec:
           limits:
             cpu: "200m"
             memory: "256Mi"
-        # Simple placeholder HTML
-        command:
-        - /bin/sh
-        - -c
-        - |
-          echo '<!DOCTYPE html>
-          <html><head><title>Playable Stories - Development</title></head>
-          <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-          <h1>🎮 Playable Stories</h1>
-          <h2>Development Environment</h2>
-          <p>Web application running on HTTPS</p>
-          <p>SSL: ✅ Enabled | Auth: ❌ Disabled</p>
-          <p>Domain: dev.playablestories.ai</p>
-          </body></html>' > /usr/share/nginx/html/index.html &&
-          sed -i 's/listen       80;/listen       3000;/' /etc/nginx/conf.d/default.conf &&
-          nginx -g 'daemon off;'
+        volumeMounts:
+        - name: web-content
+          mountPath: /usr/share/nginx/html
+      volumes:
+      - name: web-content
+        configMap:
+          name: dev-web-content
 ---
 # Example development API deployment (placeholder)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: playablestories-api
-  namespace: playablestories-ai-development
+  namespace: development
 spec:
   replicas: 1
   selector:
