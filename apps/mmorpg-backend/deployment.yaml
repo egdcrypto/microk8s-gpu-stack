@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: localhost:32000/mmorpg-backend:latest
+        image: 192.168.0.118:32000/mmorpg-backend:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8090
@@ -37,8 +37,10 @@ spec:
           value: "kubernetes,dev,no-auth"
         - name: SERVER_PORT
           value: "8090"
-        - name: MONGODB_URI
-          value: "mongodb://mongodb.mongodb.svc.cluster.local:27017/mmorpg-dev"
+        - name: SPRING_DATA_MONGODB_URI
+          value: "mongodb://narrative_user:0qJXBckS6huZWJtTgBEEHd0dc%2FuE9RBkbH7sRx11vpg%3D@mongodb-client.mongodb.svc.cluster.local:27017/narrative_world_system?authSource=admin&replicaSet=rs0"
+        - name: JWT_SECRET
+          value: "dGhpcy1pcy1hLXRlc3Qtb25seS1zZWNyZXQtZm9yLWRldmVsb3BtZW50LXVzZS1vbmx5"
         resources:
           requests:
             memory: "512Mi"
@@ -90,7 +92,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: localhost:32000/mmorpg-backend:latest
+        image: 192.168.0.118:32000/mmorpg-backend:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8090
