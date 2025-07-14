@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webhook-script
+  namespace: woodpecker
+data:
+  notify.sh: |
+    #!/bin/sh
+    # Woodpecker webhook notifier
+    # This script is called by Woodpecker on build events
+    
+    # Parse webhook data
+    BUILD_STATUS="$CI_BUILD_STATUS"
+    REPO="$CI_REPO"
+    BRANCH="$CI_COMMIT_BRANCH"
+    COMMIT="$CI_COMMIT_SHA"
+    MESSAGE="$CI_COMMIT_MESSAGE"
+    BUILD_LINK="$CI_BUILD_LINK"
+    
+    # Only notify on failures
+    if [ "$BUILD_STATUS" = "failure" ] || [ "$BUILD_STATUS" = "error" ]; then
+        echo "Build failed!"
+        echo "Repository: $REPO"
+        echo "Branch: $BRANCH"
+        echo "Commit: ${COMMIT:0:8}"
+        echo "Message: $MESSAGE"
+        echo "Link: $BUILD_LINK"
+        
+        # Here you can add additional notification methods:
+        # - Send to Slack/Discord webhook
+        # - Send email
+        # - Create K8s event
+        kubectl create event \
+          --namespace=woodpecker \
+          --type=Warning \
+          --reason=BuildFailed \
+          --message="Build failed for $REPO on branch $BRANCH: $MESSAGE" \
+          build-failure-$(date +%s)
+    fi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: woodpecker-notifications
+  namespace: woodpecker
+data:
+  notifications.yaml: |
+    # Add this to your .woodpecker.yml to enable notifications
+    # 
+    # clone:
+    #   git:
+    #     image: woodpeckerci/plugin-git
+    #
+    # pipeline:
+    #   notify:
+    #     image: alpine/k8s:latest
+    #     commands:
+    #       - /scripts/notify.sh
+    #     when:
+    #       status: [failure, error]
+    #     secrets: [webhook_url]

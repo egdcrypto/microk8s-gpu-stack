@@ -1,0 +1,106 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: woodpecker-server-data
+  namespace: woodpecker
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: woodpecker-server
+  namespace: woodpecker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: woodpecker-server
+  template:
+    metadata:
+      labels:
+        app: woodpecker-server
+    spec:
+      serviceAccountName: woodpecker
+      containers:
+      - name: server
+        image: woodpeckerci/woodpecker-server:latest
+        ports:
+        - containerPort: 8000
+          name: http
+        - containerPort: 9000
+          name: grpc
+        env:
+        - name: WOODPECKER_OPEN
+          value: "true"  # Allow any user to login
+        - name: WOODPECKER_HOST
+          value: "https://ci.playablestories.ai"
+        - name: WOODPECKER_GITHUB
+          value: "true"
+        - name: WOODPECKER_GITHUB_CLIENT
+          valueFrom:
+            secretKeyRef:
+              name: woodpecker-server
+              key: WOODPECKER_GITHUB_CLIENT
+        - name: WOODPECKER_GITHUB_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: woodpecker-server
+              key: WOODPECKER_GITHUB_SECRET
+        - name: WOODPECKER_AGENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: woodpecker-server
+              key: WOODPECKER_AGENT_SECRET
+        - name: WOODPECKER_WEBHOOK_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: woodpecker-server
+              key: WOODPECKER_WEBHOOK_SECRET
+        - name: WOODPECKER_DATABASE_DRIVER
+          value: sqlite3
+        - name: WOODPECKER_DATABASE_DATASOURCE
+          value: /var/lib/woodpecker/woodpecker.db
+        - name: WOODPECKER_LOG_LEVEL
+          value: info
+        - name: WOODPECKER_ADMIN
+          value: "egdcrypto"  # Your GitHub username
+        - name: WOODPECKER_REPO_OWNERS
+          value: "egdcrypto"  # Allowed repo owners
+        - name: WOODPECKER_ESCALATE
+          value: "plugins/docker,plugins/gcr,plugins/ecr,woodpeckerci/plugin-docker-buildx"
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/woodpecker
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: woodpecker-server-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: woodpecker-server
+  namespace: woodpecker
+spec:
+  type: ClusterIP
+  selector:
+    app: woodpecker-server
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+  - name: grpc
+    port: 9000
+    targetPort: 9000

@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: woodpecker-agent
+  namespace: woodpecker
+spec:
+  replicas: 2  # Can scale based on load
+  selector:
+    matchLabels:
+      app: woodpecker-agent
+  template:
+    metadata:
+      labels:
+        app: woodpecker-agent
+    spec:
+      serviceAccountName: woodpecker
+      containers:
+      - name: agent
+        image: woodpeckerci/woodpecker-agent:latest
+        env:
+        - name: WOODPECKER_SERVER
+          value: "woodpecker-server:9000"
+        - name: WOODPECKER_AGENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: woodpecker-agent
+              key: WOODPECKER_AGENT_SECRET
+        - name: WOODPECKER_MAX_WORKFLOWS
+          value: "2"
+        - name: WOODPECKER_BACKEND
+          value: "kubernetes"
+        - name: WOODPECKER_BACKEND_K8S_NAMESPACE
+          value: "woodpecker"
+        - name: WOODPECKER_BACKEND_K8S_STORAGE_CLASS
+          value: ""  # Use default
+        - name: WOODPECKER_BACKEND_K8S_VOLUME_SIZE
+          value: "10G"
+        - name: WOODPECKER_BACKEND_K8S_STORAGE_RWX
+          value: "false"
+        - name: WOODPECKER_LOG_LEVEL
+          value: "info"
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+      # Docker-in-Docker sidecar for building images
+      - name: dind
+        image: docker:24-dind
+        securityContext:
+          privileged: true
+        env:
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
+        volumeMounts:
+        - name: docker-storage
+          mountPath: /var/lib/docker
+      volumes:
+      - name: docker-storage
+        emptyDir: {}
